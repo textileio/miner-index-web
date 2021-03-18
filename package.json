@@ -2,9 +2,9 @@
   "name": "miner-index-web",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "deploy": "buck-util push src"
   },
   "repository": {
     "type": "git",
@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/textileio/miner-index-web/issues"
   },
-  "homepage": "https://github.com/textileio/miner-index-web#readme"
+  "homepage": "https://github.com/textileio/miner-index-web#readme",
+  "dependencies": {
+    "@textile/buckr": "1.1.2"
+  }
 }

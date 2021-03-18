@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Miner Index</title>
+  <script src="https://code.jquery.com/jquery.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+      integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+      integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+
+  <link href="https://unpkg.com/bootstrap@4.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/bootstrap@4"></script>
+  <link href="https://unpkg.com/bootstrap-table@1.18.2/dist/bootstrap-table.min.css" rel="stylesheet">
+
+  <script src="https://unpkg.com/bootstrap-table@1.18.2/dist/bootstrap-table.min.js"></script>
+
+  <script src="https://unpkg.com/bootstrap-table@1.18.2/dist/extensions/mobile/bootstrap-table-mobile.min.js"></script>
+
+  <script src="https://unpkg.com/moment@2"></script>
+
+
+  <style>
+    .table-condensed{
+      font-size: 10px;
+    }
+
+    tr {
+   min-height: 72px;
+   height: 72px;
+   max-height: 72px;
+   border: 5px;
+}
+  </style>
+  
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#">Miner Index</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+    aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item">
+      <a class="nav-link" href="https://textile.io">Textile</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="https://docs.textile.io/filecoin/miner-index/">Index Docs</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="https://minerindex.hub.textile.io/docs/">API Docs</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="https://docs.textile.io/hub/accounts/">CLI Download</a>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<table id="table" 
+  data-toggle="table" 
+  data-ajax="ajaxRequest"
+  data-search="false"
+  data-height="800"
+  data-side-pagination="server"
+  data-server-sort="true"
+  data-pagination="true"
+  data-response-handler="responseHandler"
+  data-mobile-responsive="true"
+  data-page-size="15"
+  class="table table-condensed"
+>
+  <thead>
+    <tr>
+      <th data-width="50" data-field="miner" data-formatter="minerSelect">MINER</th>
+      <th data-width="50" data-field="relative_power">RELATIVE POWER</th>
+      <th data-width="50" data-field="ask_price" data-sortable="true">ASK PRICE</th>
+      <th data-width="50" data-field="verified_ask_price" data-sortable="true">VERIFIED ASK PRICE</th>
+      <th data-width="50" data-field="sector_size">SECTOR SIZE</th>
+      <th data-width="50" data-field="active_sectors" data-sortable="true">ACTIVE SECTORS</th>
+      <th data-width="50" data-field="faulty_sectors">FAULTY SECTORS</th>
+      <th data-width="50" data-field="location">LOCATION</th>
+      <th data-width="50" data-field="deals" data-sortable="true">DEALS (TEXTILE)</th>
+      <th data-width="50" data-field="failures">FAILURES (TEXTILE)</th>
+      <th data-width="50" data-field="last_successful" data-sortable="true">LAST SUCCESSFUL</th>
+      <th data-width="50" data-field="last_transfer">LAST TRANSFER</th>
+      <th data-width="50" data-field="last_sealing">LAST SEALING TIME</th>
+    </tr>
+  </thead>
+</table>
+
+<script>
+    function minerSelect(value, row, index) {
+      const url = "https://minerindex.hub.textile.io/v1/index/miner/" + value
+        return [
+          `<a class="profile" href="${url}" title="profile" target=_blank>`,
+            value,
+          '</a>  ',
+        ].join('')
+      }
+    function responseHandler(res) {
+      const data = []
+      for (var row of res.miners) {
+        const miner = row.miner;
+        var transfers = ""
+        var sealing = ""
+        if (miner.textile.regions["021"]) {
+          if (miner.textile.regions["021"].deals.tailTransfers.length > 0) {
+            const ago = moment(Date.parse(miner.textile.regions["021"].deals.tailTransfers[0].transferedAt)).fromNow();
+            transfers = `${Math.floor(miner.textile.regions["021"].deals.tailTransfers[0].mibPerSec * 100) / 100} MiB/s (${ago})`
+          }
+          if (miner.textile.regions["021"].deals.tailSealed.length > 0) {
+            const ago = moment(Date.parse(miner.textile.regions["021"].deals.tailSealed[0].sealedAt)).fromNow();
+             const minutes = Math.floor(miner.textile.regions["021"].deals.tailSealed[0].durationSeconds / 360) / 10
+            sealing = `${minutes} hours (${ago})`
+          }
+
+        }
+        var deals = 0
+        if (miner.textile.dealsSummary) {
+          deals = miner.textile.dealsSummary.total;
+        }
+        var ask = ""
+        if (miner.filecoin.askPrice !== undefined && miner.filecoin.askPrice !== "") {
+          ask = miner.filecoin.askPrice + " attoFIL"
+        }
+        var askV = ""
+        if (miner.filecoin.askVerifiedPrice !== undefined && miner.filecoin.askVerifiedPrice !== "") {
+          askV = miner.filecoin.askVerifiedPrice + " attoFIL"
+        }
+        data.push({
+          miner: miner.minerAddr,
+          relative_power: miner.filecoin.relativePower,
+          ask_price: ask,
+          verified_ask_price: askV,
+          sector_size: miner.filecoin.sectorSize,
+          active_sectors: miner.filecoin.activeSectors,
+          faulty_sectors: miner.filecoin.faultySectors,
+          location: miner.metadata.location,
+          deals: miner.textile.dealsSummary.total,
+          failures: miner.textile.dealsSummary.failures,
+          last_successful: miner.textile.dealsSummary.last,
+          last_transfer: transfers,
+          last_sealing: sealing,
+        })
+      }
+      return {total: 2133, rows: data}
+    }
+    function ajaxRequest(params) {
+      let sortField = ""
+
+      let sortAscending = false
+      if (params.data.order == "asc") sortAscending = true
+
+      switch (params.data.sort) {
+        case "active_sectors":
+          sortField = "ACTIVE_SECTORS"
+          break;
+        case "ask_price":
+          sortField = "ASK_PRICE"
+          break;
+        case "verified_ask_price":
+          sortField = "VERIFIED_ASK_PRICE"
+          break;
+        case "deals":
+          sortField = "TEXTILE_DEALS_TOTAL_SUCCESSFUL"
+          break;
+        default:
+          sortField = "TEXTILE_DEALS_LAST_SUCCESSFUL"
+      }
+
+        var url = `https://minerindex.hub.textile.io/v1/index/query?sort.ascending=${sortAscending}&sort.field=${sortField}&limit=${params.data.limit}&offset=${params.data.offset}`
+        console.log(url)
+        $.get(url).then(function (res) {
+          console.log("success")
+
+          params.success(res)
+        })
+      }
+    function queryParams(params) {
+        return params
+      }
+    $(function() {
+      const table = $("#table")
+      console.log()
+      const rowH = 86;
+      const rows = Math.floor((window.outerHeight - 195) / rowH)
+      table.bootstrapTable('resetView', { height: rows * rowH + 36 });
+      table.bootstrapTable('refreshOptions', {
+        pageSize: `${rows}`
+      })
+    })
+</script>
+</body>
